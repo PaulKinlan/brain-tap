@@ -2,9 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Brain Tap — left/right counting game</title>
-<meta name="description" content="A brain game on a sheet of paper: work down two columns of numbers, tapping the right number of times (or fingers) with your left and right hand. Paper, keyboard, or MIDI keyboard.">
+<meta name="description" content="A brain game on a sheet of paper: work down two columns of numbers, tapping the right number of times (or fingers) with your left and right hand. Paper, keyboard, touch, or MIDI keyboard.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🧠</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,175 +15,139 @@
   --ctl:#39414f; --ctl-soft:#5d6678;
   --paper:#fcfbf3; --rule:#acc3e6; --margin:#e7807e;
   --pencil:#3b3b3b; --pencil-soft:#6f6f6f;
-  --left:#2f6db5; --right:#b5552f; --ok:#3a8f54; --bad:#c0392b; --acc:#3b3b3b;
+  --left:#2f6db5; --right:#b5552f; --ok:#3a8f54; --bad:#c0392b;
   --rule-h:46px;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
+html,body{height:100%}
 html{font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif}
 body{
-  margin:0;min-height:100vh;color:var(--pencil);
-  background:linear-gradient(165deg,var(--bg1),var(--bg2));
-  background-attachment:fixed;
+  margin:0;color:var(--pencil);
+  background:linear-gradient(165deg,var(--bg1),var(--bg2));background-attachment:fixed;
+  display:flex;flex-direction:column;
 }
-.wrap{max-width:740px;margin:0 auto;padding:18px 14px 60px}
+.wrap{flex:1;display:flex;flex-direction:column;width:100%;max-width:760px;margin:0 auto;
+  padding:8px 10px calc(8px + env(safe-area-inset-bottom));min-height:0}
 
-/* --- controls: a little wooden tray above the sheet --- */
-.controls,.midi-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center}
-.controls{margin:6px 0 16px}
-.midi-row{margin:0 0 14px}
-.seg{display:inline-flex;background:#ffffffaa;border:1px solid #00000018;border-radius:10px;overflow:hidden;box-shadow:0 1px 2px #0000000d}
-.seg button{appearance:none;border:0;background:transparent;color:var(--ctl-soft);font:inherit;font-size:.9rem;padding:8px 12px;cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--ctl);color:#fff;font-weight:700}
-label.lbl{color:var(--ctl);font-size:.85rem;display:inline-flex;gap:6px;align-items:center}
-input[type=number]{width:3.4em;background:#fff;border:1px solid #00000026;color:var(--pencil);border-radius:8px;padding:6px 8px;font:inherit}
-.btn{appearance:none;border:1px solid #0000001f;background:#ffffffcc;color:var(--ctl);font:inherit;font-weight:600;padding:9px 15px;border-radius:10px;cursor:pointer}
+/* --- slim top bar (always visible) --- */
+.topbar{display:flex;align-items:center;gap:8px;padding:4px 4px 8px}
+.topbar .title{font-family:"Caveat",cursive;font-weight:700;font-size:1.5rem;line-height:1}
+.topbar .title .b{color:var(--left)} .topbar .title .t{color:var(--right)}
+.topbar .spacer{flex:1}
+.topbar .status{font-size:.8rem;color:var(--ctl-soft);font-variant-numeric:tabular-nums;text-align:right;line-height:1.15}
+.btn{appearance:none;border:1px solid #0000001f;background:#ffffffcc;color:var(--ctl);font:inherit;font-weight:600;padding:8px 13px;border-radius:10px;cursor:pointer}
 .btn.primary{background:var(--ctl);color:#fff;border-color:transparent}
+.btn.icon{padding:8px 11px}
 .btn:hover{border-color:var(--ctl)}
-select{background:#fff;border:1px solid #00000026;color:var(--pencil);border-radius:8px;padding:7px 9px;font:inherit;max-width:220px}
-.pill{font-size:.78rem;padding:3px 9px;border-radius:20px;border:1px solid #00000026;color:var(--ctl-soft)}
-.pill.ok{color:var(--ok);border-color:var(--ok)} .pill.bad{color:var(--bad);border-color:var(--bad)}
-.statusbar{display:flex;justify-content:space-between;gap:10px;color:var(--ctl-soft);font-size:.9rem;margin:0 6px 10px;font-variant-numeric:tabular-nums}
 
-/* --- the sheet of paper --- */
+/* --- the sheet fills the screen --- */
 .sheet{
-  position:relative;background:var(--paper);border-radius:3px;
-  padding:24px 26px 40px 64px;            /* big left pad for the margin + holes */
-  box-shadow:0 18px 40px #00000055, 0 2px 6px #00000033;
-  background-image:
-    /* ruled horizontal lines */
-    repeating-linear-gradient(var(--paper) 0, var(--paper) calc(var(--rule-h) - 1px), var(--rule) calc(var(--rule-h) - 1px), var(--rule) var(--rule-h));
-  background-position:0 14px;
+  position:relative;flex:1;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;
+  background:var(--paper);border-radius:4px;padding:16px 18px 28px 56px;
+  box-shadow:0 10px 30px #0000002e, 0 1px 3px #00000022;
+  background-image:repeating-linear-gradient(var(--paper) 0, var(--paper) calc(var(--rule-h) - 1px), var(--rule) calc(var(--rule-h) - 1px), var(--rule) var(--rule-h));
+  background-position:0 10px;
 }
-.sheet::before{ /* red margin line */
-  content:"";position:absolute;top:0;bottom:0;left:48px;width:2px;background:var(--margin);opacity:.7;
-}
-.sheet::after{ /* three hole punches */
-  content:"";position:absolute;left:16px;top:0;bottom:0;width:18px;
-  background-image:radial-gradient(circle, #00000022 46%, #0000 48%);
-  background-repeat:no-repeat;
-  background-position:center 16%, center 50%, center 84%;
-  background-size:18px 18px;
-}
-header{margin:2px 0 6px}
-h1{margin:0;font-family:"Caveat",cursive;font-weight:700;font-size:2.4rem;color:var(--pencil)}
-h1 .b{color:var(--left)} h1 .t{color:var(--right)}
-.tag{font-family:"Patrick Hand",cursive;color:var(--pencil-soft);font-size:1.05rem;margin-top:-2px}
-.tag b{font-weight:400}
-.tag .l{color:var(--left)} .tag .r{color:var(--right)}
+.sheet::before{content:"";position:absolute;top:0;bottom:0;left:42px;width:2px;background:var(--margin);opacity:.7}
+.sheet::after{content:"";position:absolute;left:12px;top:0;bottom:0;width:16px;
+  background-image:radial-gradient(circle,#00000022 46%,#0000 48%);background-repeat:no-repeat;
+  background-position:center 14%,center 50%,center 86%;background-size:16px 16px}
+.sheet .head{margin:0 0 4px}
+.sheet h1{margin:0;font-family:"Caveat",cursive;font-weight:700;font-size:2rem}
+.sheet h1 .b{color:var(--left)} .sheet h1 .t{color:var(--right)}
+.tag{font-family:"Patrick Hand",cursive;color:var(--pencil-soft);font-size:1rem;margin-top:-2px}
+.tag b{font-weight:400} .tag .l{color:var(--left)} .tag .r{color:var(--right)}
 
-.hands{display:flex;justify-content:center;gap:34px;margin:8px 0 2px;font-family:"Patrick Hand",cursive}
-.hand{text-align:center}
-.hand .cap{font-size:.8rem;color:var(--pencil-soft);letter-spacing:.04em}
-.hand .big{font-size:2rem;font-variant-numeric:tabular-nums}
+.hands{display:flex;justify-content:center;gap:30px;margin:4px 0;font-family:"Patrick Hand",cursive}
+.hand{text-align:center} .hand .cap{font-size:.72rem;color:var(--pencil-soft)}
+.hand .big{font-size:1.7rem;font-variant-numeric:tabular-nums}
 .hand.l .big{color:var(--left)} .hand.r .big{color:var(--right)}
 
 table{width:100%;border-collapse:collapse;font-family:"Patrick Hand",cursive}
-thead th{font-size:1rem;color:var(--pencil-soft);font-weight:400;padding:2px 0 0;text-align:center}
+thead th{font-size:.95rem;color:var(--pencil-soft);font-weight:400;padding:2px 0 0;text-align:center}
 thead th.l{color:var(--left)} thead th.r{color:var(--right)}
-tbody td{text-align:center;font-size:2.4rem;line-height:var(--rule-h);height:var(--rule-h);padding:0}
+tbody td{text-align:center;font-size:2.2rem;line-height:var(--rule-h);height:var(--rule-h);padding:0}
 tbody td.num{width:42%;color:var(--pencil)}
-tbody .cur{width:16%;color:#0000;font-size:1rem}    /* row marker, faint */
+tbody .cur{width:16%;color:#0000;font-size:1rem}
 tr.active td.num.l{color:var(--left)} tr.active td.num.r{color:var(--right)}
 tr.active .cur{color:var(--pencil-soft)}
 tr.done td.num{color:var(--pencil-soft);opacity:.5}
-/* slight handwritten jitter so digits don't look mechanical */
-tbody td.num{transform:rotate(-1.2deg)}
-tbody tr:nth-child(2n) td.num{transform:rotate(1deg)}
-tbody tr:nth-child(3n) td.num.r{transform:rotate(-.5deg)}
+tbody td.num{transform:rotate(-1.2deg)} tbody tr:nth-child(2n) td.num{transform:rotate(1deg)}
 .pips{display:flex;gap:5px;justify-content:center;height:10px;margin-top:-6px}
 .pip{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--pencil-soft)}
 td.l .pip.on{background:var(--left);border-color:var(--left)} td.r .pip.on{background:var(--right);border-color:var(--right)}
 .flash-ok td{animation:fok .45s} .flash-bad td{animation:fbad .45s}
 @keyframes fok{0%{background:#3a8f5433}100%{background:transparent}}
 @keyframes fbad{0%{background:#c0392b33}100%{background:transparent}}
+tbody td.shape{height:auto;padding:7px 0}
+tbody td.shape svg{width:74px;height:74px} @media(max-width:560px){tbody td.shape svg{width:58px;height:58px}}
 
-.hint{font-family:"Patrick Hand",cursive;color:var(--pencil-soft);font-size:1rem;text-align:center;margin:14px 6px 0}
+.hint{font-family:"Patrick Hand",cursive;color:var(--ctl-soft);font-size:.95rem;text-align:center;margin:8px 6px 2px}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-footer{text-align:center;color:var(--ctl-soft);font-size:.8rem;margin-top:22px}
-footer a{color:var(--ctl-soft)}
 
-/* --- touch mode: split the screen into left / right tap zones --- */
-.touchzones{position:fixed;inset:0;display:none;z-index:5;touch-action:none}
+/* --- options overlay (all settings live here) --- */
+.overlay{position:fixed;inset:0;display:none;z-index:40;background:#1c2330aa;backdrop-filter:blur(3px)}
+.overlay.show{display:grid;place-items:center}
+.panel{background:#fff;border-radius:16px;padding:18px;width:min(440px,92vw);max-height:88vh;overflow:auto;
+  box-shadow:0 20px 50px #00000055;display:flex;flex-direction:column;gap:12px}
+.panel h2{margin:2px 0 0;font-family:"Caveat",cursive;font-size:1.5rem}
+.row{display:flex;flex-direction:column;gap:5px}
+.row > .lbl{font-size:.78rem;color:var(--ctl-soft);text-transform:uppercase;letter-spacing:.04em}
+.seg{display:flex;flex-wrap:wrap;background:#eef0f4;border:1px solid #00000012;border-radius:10px;padding:3px;gap:3px}
+.seg button{flex:1 1 auto;appearance:none;border:0;background:transparent;color:var(--ctl-soft);font:inherit;font-size:.92rem;padding:9px 10px;border-radius:8px;cursor:pointer;white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--ctl);color:#fff;font-weight:700}
+.inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+input[type=number]{width:4em;background:#fff;border:1px solid #00000026;color:var(--pencil);border-radius:8px;padding:7px 8px;font:inherit}
+select{background:#fff;border:1px solid #00000026;color:var(--pencil);border-radius:8px;padding:8px 9px;font:inherit;max-width:100%}
+.pill{font-size:.78rem;padding:4px 10px;border-radius:20px;border:1px solid #00000026;color:var(--ctl-soft)}
+.pill.ok{color:var(--ok);border-color:var(--ok)} .pill.bad{color:var(--bad);border-color:var(--bad)}
+.panel .actions{display:flex;gap:8px;margin-top:2px}
+.panel .actions .btn{flex:1}
+
+/* --- finish card --- */
+.card{background:var(--paper);border-radius:14px;padding:24px 28px;text-align:center;max-width:340px;font-family:"Patrick Hand",cursive;box-shadow:0 18px 40px #00000066}
+.card h2{font-family:"Caveat",cursive;margin:.1em 0 .2em;font-size:1.9rem} .card .big{font-size:2.5rem;color:var(--ok)} .card p{color:var(--pencil-soft)}
+
+/* --- touch mode: full-screen split play surface --- */
+.touchzones{position:fixed;inset:0;display:none;z-index:30;touch-action:none}
 .touchzones.show{display:flex}
-.touchzones .zone{flex:1;display:flex;align-items:flex-end;justify-content:center;padding-bottom:8vh;
-  font-family:"Patrick Hand",cursive;font-size:1.1rem;user-select:none}
-.touchzones .zone.l{background:linear-gradient(180deg,#2f6db500,#2f6db52a)}
-.touchzones .zone.r{background:linear-gradient(180deg,#b5552f00,#b5552f2a)}
-.touchzones .zone.l{color:var(--left)} .touchzones .zone.r{color:var(--right)}
-.touchzones .zone .cnt{position:absolute;top:14vh;font-size:3rem;font-weight:700}
-.touchzones .zone:active,.touchzones .zone.lit.l{background:#2f6db54d}
-.touchzones .zone.lit.r{background:#b5552f4d}
-.touchzones .mid{width:2px;background:#0000001a}
-
-/* --- shapes variant: spiral cells --- */
-tbody td.shape{height:auto;padding:8px 0}
-tbody td.shape svg{width:78px;height:78px;display:inline-block}
-@media (max-width:560px){ tbody td.shape svg{width:60px;height:60px} }
-
-.overlay{position:fixed;inset:0;display:none;place-items:center;background:#2b1c0fbb;backdrop-filter:blur(3px);z-index:10}
-.overlay.show{display:grid}
-.card{background:var(--paper);border-radius:8px;padding:26px 30px;text-align:center;max-width:340px;font-family:"Patrick Hand",cursive;box-shadow:0 18px 40px #00000066}
-.card h2{font-family:"Caveat",cursive;margin:.1em 0 .2em;font-size:2rem}
-.card .big{font-size:2.6rem;color:var(--ok)} .card p{color:var(--pencil-soft)}
+.touchzones .zone{flex:1;position:relative;display:flex;align-items:flex-end;justify-content:center;
+  padding-bottom:14vh;font-family:"Patrick Hand",cursive;font-size:1.1rem;user-select:none}
+.touchzones .zone.l{background:#dcebfb;color:var(--left)} .touchzones .zone.r{background:#fbe7da;color:var(--right)}
+.touchzones .zone.l{background:#dceafb} .touchzones .zone:active.l{background:#bcd8f5} .touchzones .zone:active.r{background:#f7cdb6}
+.touchzones .zone .cnt{position:absolute;top:40%;transform:translateY(-50%);font-size:4.4rem;font-weight:700}
+.touchzones .zone .lbl2{position:absolute;top:18%;font-size:1rem;opacity:.8}
+.touchzones .mid{width:2px;background:#00000018}
+.touchzones .exit{position:absolute;top:calc(8px + env(safe-area-inset-top));right:10px;z-index:2}
 
 @media print{
-  body{background:#fff}
-  .controls,.midi-row,.statusbar,.hint,.hands,footer,.no-print{display:none!important}
-  .wrap{max-width:none}
-  .sheet{box-shadow:none;border-radius:0}
+  body{background:#fff;display:block} .wrap{max-width:none;display:block}
+  .topbar,.hint,.hands,.touchzones,.overlay,.no-print{display:none!important}
+  .sheet{box-shadow:none;border-radius:0;overflow:visible;height:auto}
   tbody td.num{color:#000!important;opacity:1!important;transform:none!important}
 }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <div class="controls no-print">
-    <div class="seg" id="variant" role="group" aria-label="Game variant">
-      <button data-variant="numbers" aria-pressed="true">🔢 Numbers</button>
-      <button data-variant="shapes" aria-pressed="false">🌀 Shapes</button>
-    </div>
-    <div class="seg" id="mode" role="group" aria-label="Input mode">
-      <button data-mode="paper" aria-pressed="false">📄 Paper</button>
-      <button data-mode="keyboard" aria-pressed="true">⌨️ Keyboard</button>
-      <button data-mode="touch" aria-pressed="false">👆 Touch</button>
-      <button data-mode="midi" aria-pressed="false">🎹 MIDI</button>
-    </div>
-    <div class="seg" id="diff" role="group" aria-label="Difficulty">
-      <button data-diff="beginner" aria-pressed="false">Beginner 1–2</button>
-      <button data-diff="normal" aria-pressed="true">Normal 1–4</button>
-    </div>
-    <div class="seg" id="count" role="group" aria-label="How to answer">
-      <button data-count="taps" aria-pressed="true">Tap N times</button>
-      <button data-count="fingers" aria-pressed="false">Hold N fingers</button>
-    </div>
-    <label class="lbl">Rows <input type="number" id="rows" min="2" max="40" value="8"></label>
-    <button class="btn primary" id="new">New game</button>
-    <button class="btn" id="print">🖨️ Print</button>
+  <div class="topbar no-print">
+    <span class="title"><span class="b">Brain</span> <span class="t">Tap</span></span>
+    <span class="spacer"></span>
+    <span class="status" id="statusMini"></span>
+    <button class="btn primary" id="new">New</button>
+    <button class="btn icon" id="optionsBtn" aria-haspopup="dialog">⚙︎ Options</button>
   </div>
 
-  <div class="midi-row no-print" id="midiRow" hidden>
-    <button class="btn" id="midiConnect">Connect MIDI keyboard</button>
-    <select id="midiInputs" hidden aria-label="MIDI input device"></select>
-    <span class="pill" id="midiStatus">not connected</span>
-  </div>
-
-  <div class="statusbar no-print">
-    <span id="progress">Row 0 / 0</span>
-    <span id="timer">0.0s</span>
-    <span id="errors">errors 0</span>
-  </div>
-
-  <div class="hands no-print" id="hands" hidden>
-    <div class="hand l"><div class="cap">LEFT hand</div><div class="big" id="lh">0/0</div></div>
-    <div class="hand r"><div class="cap">RIGHT hand</div><div class="big" id="rh">0/0</div></div>
-  </div>
-
-  <div class="sheet">
-    <header>
+  <div class="sheet" id="sheet">
+    <div class="head">
       <h1><span class="b">Brain</span> <span class="t">Tap</span></h1>
       <div class="tag">Work down the rows — <b class="l">left</b> hand, <b class="r">right</b> hand.</div>
-    </header>
+    </div>
+    <div class="hands no-print" id="hands" hidden>
+      <div class="hand l"><div class="cap">LEFT</div><div class="big" id="lh">0/0</div></div>
+      <div class="hand r"><div class="cap">RIGHT</div><div class="big" id="rh">0/0</div></div>
+    </div>
     <table id="grid" aria-label="Number grid">
       <thead><tr><th class="l">Left</th><th></th><th class="r">Right</th></tr></thead>
       <tbody id="rows-body"></tbody>
@@ -192,17 +156,64 @@ tbody td.shape svg{width:78px;height:78px;display:inline-block}
 
   <p class="hint no-print" id="hint"></p>
   <div class="sr" id="live" aria-live="assertive"></div>
-
-  <footer class="no-print">Brain Tap · paper, keyboard, or MIDI keyboard</footer>
+  <!-- offscreen status spans the script reads/writes -->
+  <div hidden><span id="progress"></span><span id="timer"></span><span id="errors"></span></div>
 </div>
 
+<!-- Touch-mode full-screen play surface -->
 <div class="touchzones no-print" id="touchzones" aria-hidden="true">
-  <div class="zone l" id="zoneL"><span class="cnt" id="zoneLcnt"></span><span>LEFT — tap here</span></div>
+  <div class="zone l" id="zoneL"><span class="lbl2">LEFT hand</span><span class="cnt" id="zoneLcnt"></span><span>tap here</span></div>
   <div class="mid"></div>
-  <div class="zone r" id="zoneR"><span class="cnt" id="zoneRcnt"></span><span>RIGHT — tap here</span></div>
+  <div class="zone r" id="zoneR"><span class="lbl2">RIGHT hand</span><span class="cnt" id="zoneRcnt"></span><span>tap here</span></div>
+  <button class="btn exit" id="touchExit">Options</button>
 </div>
 
-<div class="overlay" id="overlay">
+<!-- Options overlay -->
+<div class="overlay no-print" id="optionsOverlay" role="dialog" aria-label="Options" aria-modal="true">
+  <div class="panel">
+    <h2>Options</h2>
+    <div class="row"><span class="lbl">Game</span>
+      <div class="seg" id="variant" role="group" aria-label="Game variant">
+        <button data-variant="numbers" aria-pressed="true">🔢 Numbers</button>
+        <button data-variant="shapes" aria-pressed="false">🌀 Shapes</button>
+      </div>
+    </div>
+    <div class="row" id="rowMode"><span class="lbl">Input</span>
+      <div class="seg" id="mode" role="group" aria-label="Input mode">
+        <button data-mode="paper" aria-pressed="false">📄 Paper</button>
+        <button data-mode="keyboard" aria-pressed="true">⌨️ Keyboard</button>
+        <button data-mode="touch" aria-pressed="false">👆 Touch</button>
+        <button data-mode="midi" aria-pressed="false">🎹 MIDI</button>
+      </div>
+    </div>
+    <div class="row" id="rowDiff"><span class="lbl">Difficulty</span>
+      <div class="seg" id="diff" role="group" aria-label="Difficulty">
+        <button data-diff="beginner" aria-pressed="false">1–2</button>
+        <button data-diff="normal" aria-pressed="true">1–4</button>
+      </div>
+    </div>
+    <div class="row" id="rowCount"><span class="lbl">Answer by</span>
+      <div class="seg" id="count" role="group" aria-label="How to answer">
+        <button data-count="taps" aria-pressed="true">Tap N times</button>
+        <button data-count="fingers" aria-pressed="false">Hold N fingers</button>
+      </div>
+    </div>
+    <div class="row"><span class="lbl">Rows</span>
+      <div class="inline"><input type="number" id="rows" min="2" max="40" value="8"></div>
+    </div>
+    <div class="row inline" id="midiRow" hidden>
+      <button class="btn" id="midiConnect">Connect MIDI keyboard</button>
+      <select id="midiInputs" hidden aria-label="MIDI input device"></select>
+      <span class="pill" id="midiStatus">not connected</span>
+    </div>
+    <div class="actions">
+      <button class="btn" id="print">🖨️ Print</button>
+      <button class="btn primary" id="optionsDone">Done</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay no-print" id="overlay">
   <div class="card">
     <h2>Done! 🎉</h2>
     <div class="big" id="finalTime">0.0s</div>

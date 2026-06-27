@@ -91,6 +91,7 @@ function generate() {
     state.running = false;
     render();
     updateStatus();
+    applyMode();
     announce("New shapes sheet ready. Trace each spiral with your left and right hand, or print it.");
     return;
   }
@@ -105,6 +106,7 @@ function generate() {
   state.done = false;
   render();
   updateStatus();
+  applyMode();
   announce(state.mode === "paper"
     ? "New sheet ready. Print it or play on screen."
     : `New game. Row 1: left ${state.grid[0].left}, right ${state.grid[0].right}.`);
@@ -159,6 +161,15 @@ function handCount(side) {
 function updateStatus() {
   $("progress").textContent = `Row ${Math.min(state.current + (state.done ? 0 : 1), state.rows)} / ${state.rows}`;
   $("errors").textContent = `errors ${state.errors}`;
+  updateMini();
+}
+
+function updateMini() {
+  if (state.variant === "shapes") { $("statusMini").textContent = `${state.rows} shapes`; return; }
+  const s = state.running ? (performance.now() - state.startedAt) / 1000 : 0;
+  $("statusMini").innerHTML =
+    `Row ${Math.min(state.current + (state.done ? 0 : 1), state.rows)}/${state.rows}` +
+    ` · ${s.toFixed(1)}s · ${state.errors} err`;
 }
 
 let timerRAF;
@@ -166,6 +177,7 @@ function tickTimer() {
   if (!state.running) return;
   const s = (performance.now() - state.startedAt) / 1000;
   $("timer").textContent = s.toFixed(1) + "s";
+  updateMini();
   timerRAF = requestAnimationFrame(tickTimer);
 }
 
@@ -345,16 +357,19 @@ function setSeg(groupId, attr, value, key) {
 function applyMode() {
   const shapes = state.variant === "shapes";
   // In the shapes variant only the sheet + print/new/rows make sense.
-  $("mode").hidden = shapes;
-  $("diff").hidden = shapes;
-  $("count").hidden = shapes;
+  $("rowMode").hidden = shapes;
+  $("rowDiff").hidden = shapes;
+  $("rowCount").hidden = shapes;
   $("midiRow").hidden = shapes || state.mode !== "midi";
-  document.querySelector(".statusbar").hidden = shapes;
   // Touch zones overlay only in touch mode (numbers variant, not finished).
   const touchOn = !shapes && state.mode === "touch" && !state.done;
   const tz = $("touchzones");
   tz.classList.toggle("show", touchOn);
   tz.setAttribute("aria-hidden", String(!touchOn));
+  // While the full-screen touch surface is up, hide the topbar + hint so nothing
+  // bleeds through behind the zones.
+  document.querySelector(".topbar").hidden = touchOn;
+  $("hint").hidden = touchOn;
 
   if (shapes) {
     $("hint").textContent = "Shapes: trace each spiral with your left and right hand (same shape, both hands). Hit Print for a paper sheet.";
@@ -416,6 +431,17 @@ $("mode").addEventListener("click", (e) => {
 });
 bindZone($("zoneL"), "left");
 bindZone($("zoneR"), "right");
+
+// Options overlay open/close.
+function openOptions() { $("optionsOverlay").classList.add("show"); }
+function closeOptions() { $("optionsOverlay").classList.remove("show"); }
+$("optionsBtn").addEventListener("click", openOptions);
+$("optionsDone").addEventListener("click", closeOptions);
+$("touchExit").addEventListener("click", openOptions);
+$("optionsOverlay").addEventListener("click", (e) => { if (e.target === $("optionsOverlay")) closeOptions(); });
+// Changing the game variant or input mode closes the panel so you see the result.
+$("variant").addEventListener("click", (e) => { if (e.target.closest("button")) closeOptions(); });
+$("mode").addEventListener("click", (e) => { if (e.target.closest("button") && e.target.dataset.mode !== "midi") closeOptions(); });
 $("diff").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
   setSeg("diff", "diff", b.dataset.diff, "diff"); generate();
