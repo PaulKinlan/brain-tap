@@ -411,12 +411,33 @@ function releasePointer(e) {
 window.addEventListener("pointerup", releasePointer);
 window.addEventListener("pointercancel", releasePointer);
 
+function zonePips(target, on) {
+  let s = "";
+  for (let i = 0; i < target; i++) s += `<i class="${i < on ? "on" : ""}"></i>`;
+  return s;
+}
+
 function updateTouchZones() {
   if (state.mode !== "touch" || state.variant === "shapes") return;
   const row = state.grid[state.current];
-  if (!row || state.done) { $("zoneLcnt").textContent = ""; $("zoneRcnt").textContent = ""; return; }
-  $("zoneLcnt").textContent = `${handCount("left")} / ${row.left}`;
-  $("zoneRcnt").textContent = `${handCount("right")} / ${row.right}`;
+  const verb = state.count === "fingers" ? "hold" : "tap";
+  const noun = state.count === "fingers" ? "finger" : "time";
+  for (const side of ["left", "right"]) {
+    const T = side === "left" ? "L" : "R";
+    if (!row || state.done) {
+      $("zone" + T + "cnt").textContent = "";
+      $("zone" + T + "todo").textContent = "";
+      $("zone" + T + "pips").innerHTML = "";
+      continue;
+    }
+    const target = row[side];
+    const on = handCount(side);
+    $("zone" + T + "cnt").textContent = String(target);                       // the goal, big
+    $("zone" + T + "todo").textContent = `${verb} ${target} ${noun}${target === 1 ? "" : "s"}`;
+    $("zone" + T + "pips").innerHTML = zonePips(target, on);                  // fills as you go
+  }
+  const hb = $("touchHint");
+  if (hb) hb.textContent = state.done ? "" : "Tap each side the right number — left hand on the left, right hand on the right.";
 }
 
 $("variant").addEventListener("click", (e) => {

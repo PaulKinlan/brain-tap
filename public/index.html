@@ -110,14 +110,21 @@ select{background:#fff;border:1px solid #00000026;color:var(--pencil);border-rad
 .card h2{font-family:"Caveat",cursive;margin:.1em 0 .2em;font-size:1.9rem} .card .big{font-size:2.5rem;color:var(--ok)} .card p{color:var(--pencil-soft)}
 
 /* --- touch mode: full-screen split play surface --- */
-.touchzones{position:fixed;inset:0;display:none;z-index:30;touch-action:none}
+.touchzones{position:fixed;inset:0;display:none;z-index:30;touch-action:none;background:#fff}
 .touchzones.show{display:flex}
 .touchzones .zone{flex:1;position:relative;display:flex;align-items:flex-end;justify-content:center;
   padding-bottom:14vh;font-family:"Patrick Hand",cursive;font-size:1.1rem;user-select:none}
 .touchzones .zone.l{background:#dcebfb;color:var(--left)} .touchzones .zone.r{background:#fbe7da;color:var(--right)}
 .touchzones .zone.l{background:#dceafb} .touchzones .zone:active.l{background:#bcd8f5} .touchzones .zone:active.r{background:#f7cdb6}
-.touchzones .zone .cnt{position:absolute;top:40%;transform:translateY(-50%);font-size:4.4rem;font-weight:700}
-.touchzones .zone .lbl2{position:absolute;top:18%;font-size:1rem;opacity:.8}
+.touchzones .zone{flex-direction:column;justify-content:center;gap:6px;padding-bottom:0}
+.touchzones .zone .lbl2{font-size:1.05rem;opacity:.85;letter-spacing:.04em}
+.touchzones .zone .cnt{font-size:5rem;font-weight:700;line-height:1}
+.touchzones .zone .todo{font-size:1.25rem;opacity:.95}
+.touchzones .zone .zpips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:80%;margin-top:6px;min-height:20px}
+.touchzones .zone .zpips i{width:18px;height:18px;border-radius:50%;border:2px solid currentColor;opacity:.5}
+.touchzones .zone .zpips i.on{opacity:1;background:currentColor}
+.touchzones .hintbar{position:absolute;bottom:calc(10px + env(safe-area-inset-bottom));left:0;right:0;text-align:center;
+  font-family:"Patrick Hand",cursive;color:var(--ctl-soft);font-size:.95rem;z-index:2;pointer-events:none}
 .touchzones .mid{width:2px;background:#00000018}
 .touchzones .exit{position:absolute;top:calc(8px + env(safe-area-inset-top));right:10px;z-index:2}
 
@@ -162,10 +169,21 @@ select{background:#fff;border:1px solid #00000026;color:var(--pencil);border-rad
 
 <!-- Touch-mode full-screen play surface -->
 <div class="touchzones no-print" id="touchzones" aria-hidden="true">
-  <div class="zone l" id="zoneL"><span class="lbl2">LEFT hand</span><span class="cnt" id="zoneLcnt"></span><span>tap here</span></div>
+  <div class="zone l" id="zoneL">
+    <span class="lbl2">LEFT hand</span>
+    <span class="cnt" id="zoneLcnt"></span>
+    <span class="todo" id="zoneLtodo"></span>
+    <span class="zpips" id="zoneLpips"></span>
+  </div>
   <div class="mid"></div>
-  <div class="zone r" id="zoneR"><span class="lbl2">RIGHT hand</span><span class="cnt" id="zoneRcnt"></span><span>tap here</span></div>
+  <div class="zone r" id="zoneR">
+    <span class="lbl2">RIGHT hand</span>
+    <span class="cnt" id="zoneRcnt"></span>
+    <span class="todo" id="zoneRtodo"></span>
+    <span class="zpips" id="zoneRpips"></span>
+  </div>
   <button class="btn exit" id="touchExit">Options</button>
+  <div class="hintbar" id="touchHint"></div>
 </div>
 
 <!-- Options overlay -->
