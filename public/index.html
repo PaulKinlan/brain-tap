@@ -112,8 +112,8 @@ select{background:#fff;border:1px solid #00000026;color:var(--pencil);border-rad
 /* --- touch mode: full-screen split play surface --- */
 .touchzones{position:fixed;inset:0;display:none;z-index:30;touch-action:none;background:#fff}
 .touchzones.show{display:flex}
-.touchzones .zone{flex:1;position:relative;display:flex;align-items:flex-end;justify-content:center;
-  padding-bottom:14vh;font-family:"Patrick Hand",cursive;font-size:1.1rem;user-select:none}
+.touchzones .zone{flex:1;position:relative;display:flex;align-items:center;justify-content:center;
+  font-family:"Patrick Hand",cursive;font-size:1.1rem;user-select:none;overflow:hidden}
 .touchzones .zone.l{background:#dcebfb;color:var(--left)} .touchzones .zone.r{background:#fbe7da;color:var(--right)}
 .touchzones .zone.l{background:#dceafb} .touchzones .zone:active.l{background:#bcd8f5} .touchzones .zone:active.r{background:#f7cdb6}
 .touchzones .zone{flex-direction:column;justify-content:center;gap:6px;padding-bottom:0}
