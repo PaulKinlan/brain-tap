@@ -4,80 +4,123 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Brain Tap — left/right counting game</title>
-<meta name="description" content="A brain game: work down two columns of numbers, tapping the right number of times (or fingers) with your left and right hand. Paper, keyboard, or MIDI keyboard.">
+<meta name="description" content="A brain game on a sheet of paper: work down two columns of numbers, tapping the right number of times (or fingers) with your left and right hand. Paper, keyboard, or MIDI keyboard.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🧠</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0f1220; --panel:#171b2e; --ink:#eef0f7; --mut:#9aa3bd; --line:#2a3050;
-  --left:#5aa9ff; --right:#ff8a5a; --ok:#41d18b; --bad:#ff5d6c; --acc:#b58bff;
+  --desk1:#6b4a2f; --desk2:#5a3d27;
+  --paper:#fcfbf3; --rule:#acc3e6; --margin:#e7807e;
+  --pencil:#3b3b3b; --pencil-soft:#6f6f6f;
+  --left:#2f6db5; --right:#b5552f; --ok:#3a8f54; --bad:#c0392b; --acc:#3b3b3b;
+  --rule-h:46px;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html{font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif}
-body{margin:0;background:radial-gradient(1200px 600px at 50% -10%,#1b2140 0,var(--bg) 60%),var(--bg);color:var(--ink);min-height:100vh}
-.wrap{max-width:760px;margin:0 auto;padding:18px 16px 60px}
-header{text-align:center;margin:8px 0 14px}
-h1{margin:0;font-size:1.7rem;letter-spacing:-.02em}
+body{
+  margin:0;min-height:100vh;color:var(--pencil);
+  background:
+    repeating-linear-gradient(115deg,#00000010 0 2px,#0000 2px 7px),
+    linear-gradient(160deg,var(--desk1),var(--desk2));
+  background-attachment:fixed;
+}
+.wrap{max-width:740px;margin:0 auto;padding:18px 14px 60px}
+
+/* --- controls: a little wooden tray above the sheet --- */
+.controls,.midi-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center}
+.controls{margin:6px 0 16px}
+.midi-row{margin:0 0 14px}
+.seg{display:inline-flex;background:#00000028;border:1px solid #ffffff22;border-radius:10px;overflow:hidden}
+.seg button{appearance:none;border:0;background:transparent;color:#f3e7d6;font:inherit;font-size:.9rem;padding:8px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:#f3e7d6;color:#4a3318;font-weight:700}
+label.lbl{color:#f3e7d6;font-size:.85rem;display:inline-flex;gap:6px;align-items:center}
+input[type=number]{width:3.4em;background:#fffef8;border:1px solid #00000030;color:var(--pencil);border-radius:8px;padding:6px 8px;font:inherit}
+.btn{appearance:none;border:1px solid #ffffff2e;background:#00000028;color:#f3e7d6;font:inherit;font-weight:600;padding:9px 15px;border-radius:10px;cursor:pointer}
+.btn.primary{background:#f3e7d6;color:#4a3318;border-color:transparent}
+.btn:hover{border-color:#f3e7d6}
+select{background:#fffef8;border:1px solid #00000030;color:var(--pencil);border-radius:8px;padding:7px 9px;font:inherit;max-width:220px}
+.pill{font-size:.78rem;padding:3px 9px;border-radius:20px;border:1px solid #ffffff33;color:#f3e7d6}
+.pill.ok{color:#bff0c8;border-color:#bff0c8} .pill.bad{color:#ffc2bd;border-color:#ffc2bd}
+.statusbar{display:flex;justify-content:space-between;gap:10px;color:#f3e7d6cc;font-size:.9rem;margin:0 6px 10px;font-variant-numeric:tabular-nums}
+
+/* --- the sheet of paper --- */
+.sheet{
+  position:relative;background:var(--paper);border-radius:3px;
+  padding:24px 26px 40px 64px;            /* big left pad for the margin + holes */
+  box-shadow:0 18px 40px #00000055, 0 2px 6px #00000033;
+  background-image:
+    /* ruled horizontal lines */
+    repeating-linear-gradient(var(--paper) 0, var(--paper) calc(var(--rule-h) - 1px), var(--rule) calc(var(--rule-h) - 1px), var(--rule) var(--rule-h));
+  background-position:0 14px;
+}
+.sheet::before{ /* red margin line */
+  content:"";position:absolute;top:0;bottom:0;left:48px;width:2px;background:var(--margin);opacity:.7;
+}
+.sheet::after{ /* three hole punches */
+  content:"";position:absolute;left:16px;top:0;bottom:0;width:18px;
+  background-image:radial-gradient(circle, #00000022 46%, #0000 48%);
+  background-repeat:no-repeat;
+  background-position:center 16%, center 50%, center 84%;
+  background-size:18px 18px;
+}
+header{margin:2px 0 6px}
+h1{margin:0;font-family:"Caveat",cursive;font-weight:700;font-size:2.4rem;color:var(--pencil)}
 h1 .b{color:var(--left)} h1 .t{color:var(--right)}
-.tag{color:var(--mut);font-size:.9rem;margin-top:2px}
-.controls{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;margin:14px 0}
-.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
-.seg button{appearance:none;border:0;background:transparent;color:var(--mut);font:inherit;font-size:.9rem;padding:8px 12px;cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--acc);color:#0f1220;font-weight:600}
-label.lbl{color:var(--mut);font-size:.85rem;display:inline-flex;gap:6px;align-items:center}
-input[type=number]{width:3.4em;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:6px 8px;font:inherit}
-.btn{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;font-weight:600;padding:9px 16px;border-radius:10px;cursor:pointer}
-.btn.primary{background:var(--acc);color:#0f1220;border-color:transparent}
-.btn:hover{border-color:var(--acc)}
-.statusbar{display:flex;justify-content:space-between;gap:10px;color:var(--mut);font-size:.9rem;margin:6px 2px 12px;font-variant-numeric:tabular-nums}
-.board{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px}
-table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
-thead th{font-size:.8rem;color:var(--mut);font-weight:600;padding:8px 0}
-thead th.l{color:var(--left)} thead th.r{color:var(--right)}
-tbody tr{transition:background .15s}
-tbody td{text-align:center;font-size:2rem;font-weight:700;padding:10px 0;border-top:1px solid var(--line)}
-tbody td.num{width:42%}
-tbody .cur{color:var(--mut);font-size:.95rem;font-weight:600;width:16%}
-tr.active{background:rgba(181,139,255,.10)}
-tr.active td{box-shadow:inset 0 0 0 9999px rgba(181,139,255,.04)}
-tr.done td{color:var(--mut);opacity:.55}
-tr.active td.num.l{color:var(--left)} tr.active td.num.r{color:var(--right)}
-td .pips{display:flex;gap:4px;justify-content:center;margin-top:6px;height:8px}
-td .pip{width:8px;height:8px;border-radius:50%;background:var(--line)}
-td.l .pip.on{background:var(--left)} td.r .pip.on{background:var(--right)}
-.flash-ok{animation:fok .4s} .flash-bad{animation:fbad .4s}
-@keyframes fok{0%{background:rgba(65,209,139,.5)}100%{background:transparent}}
-@keyframes fbad{0%{background:rgba(255,93,108,.5)}100%{background:transparent}}
-.hint{color:var(--mut);font-size:.85rem;text-align:center;margin:12px 4px}
-.hands{display:flex;justify-content:center;gap:26px;margin:10px 0 4px}
+.tag{font-family:"Patrick Hand",cursive;color:var(--pencil-soft);font-size:1.05rem;margin-top:-2px}
+.tag b{font-weight:400}
+.tag .l{color:var(--left)} .tag .r{color:var(--right)}
+
+.hands{display:flex;justify-content:center;gap:34px;margin:8px 0 2px;font-family:"Patrick Hand",cursive}
 .hand{text-align:center}
-.hand .cap{font-size:.75rem;color:var(--mut)}
-.hand .big{font-size:2.2rem;font-weight:800;font-variant-numeric:tabular-nums}
+.hand .cap{font-size:.8rem;color:var(--pencil-soft);letter-spacing:.04em}
+.hand .big{font-size:2rem;font-variant-numeric:tabular-nums}
 .hand.l .big{color:var(--left)} .hand.r .big{color:var(--right)}
-.overlay{position:fixed;inset:0;display:none;place-items:center;background:rgba(10,12,22,.78);backdrop-filter:blur(4px);z-index:10}
-.overlay.show{display:grid}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px 28px;text-align:center;max-width:340px}
-.card h2{margin:.1em 0 .3em} .card .big{font-size:2.6rem;font-weight:800;color:var(--ok)}
-.midi-row{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin:8px 0}
-select{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 9px;font:inherit;max-width:220px}
-.pill{font-size:.78rem;padding:3px 9px;border-radius:20px;border:1px solid var(--line);color:var(--mut)}
-.pill.ok{color:var(--ok);border-color:var(--ok)} .pill.bad{color:var(--bad);border-color:var(--bad)}
+
+table{width:100%;border-collapse:collapse;font-family:"Patrick Hand",cursive}
+thead th{font-size:1rem;color:var(--pencil-soft);font-weight:400;padding:2px 0 0;text-align:center}
+thead th.l{color:var(--left)} thead th.r{color:var(--right)}
+tbody td{text-align:center;font-size:2.4rem;line-height:var(--rule-h);height:var(--rule-h);padding:0}
+tbody td.num{width:42%;color:var(--pencil)}
+tbody .cur{width:16%;color:#0000;font-size:1rem}    /* row marker, faint */
+tr.active td.num.l{color:var(--left)} tr.active td.num.r{color:var(--right)}
+tr.active .cur{color:var(--pencil-soft)}
+tr.done td.num{color:var(--pencil-soft);opacity:.5}
+/* slight handwritten jitter so digits don't look mechanical */
+tbody td.num{transform:rotate(-1.2deg)}
+tbody tr:nth-child(2n) td.num{transform:rotate(1deg)}
+tbody tr:nth-child(3n) td.num.r{transform:rotate(-.5deg)}
+.pips{display:flex;gap:5px;justify-content:center;height:10px;margin-top:-6px}
+.pip{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--pencil-soft)}
+td.l .pip.on{background:var(--left);border-color:var(--left)} td.r .pip.on{background:var(--right);border-color:var(--right)}
+.flash-ok td{animation:fok .45s} .flash-bad td{animation:fbad .45s}
+@keyframes fok{0%{background:#3a8f5433}100%{background:transparent}}
+@keyframes fbad{0%{background:#c0392b33}100%{background:transparent}}
+
+.hint{font-family:"Patrick Hand",cursive;color:var(--pencil-soft);font-size:1rem;text-align:center;margin:14px 6px 0}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
-footer{text-align:center;color:var(--mut);font-size:.8rem;margin-top:26px}
-footer a{color:var(--mut)}
+footer{text-align:center;color:#f3e7d6aa;font-size:.8rem;margin-top:22px}
+footer a{color:#f3e7d6aa}
+
+.overlay{position:fixed;inset:0;display:none;place-items:center;background:#2b1c0fbb;backdrop-filter:blur(3px);z-index:10}
+.overlay.show{display:grid}
+.card{background:var(--paper);border-radius:8px;padding:26px 30px;text-align:center;max-width:340px;font-family:"Patrick Hand",cursive;box-shadow:0 18px 40px #00000066}
+.card h2{font-family:"Caveat",cursive;margin:.1em 0 .2em;font-size:2rem}
+.card .big{font-size:2.6rem;color:var(--ok)} .card p{color:var(--pencil-soft)}
+
 @media print{
-  body{background:#fff;color:#000} .controls,.statusbar,.hint,.hands,footer,.no-print{display:none!important}
-  .board{border:0} tbody td{color:#000!important;opacity:1!important} h1 .b,h1 .t{color:#000}
+  body{background:#fff}
+  .controls,.midi-row,.statusbar,.hint,.hands,footer,.no-print{display:none!important}
+  .wrap{max-width:none}
+  .sheet{box-shadow:none;border-radius:0}
+  tbody td.num{color:#000!important;opacity:1!important;transform:none!important}
 }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1><span class="b">Brain</span> <span class="t">Tap</span></h1>
-    <div class="tag">Work down the rows. Each row tells your <b style="color:var(--left)">left</b> and <b style="color:var(--right)">right</b> hand how many.</div>
-  </header>
-
   <div class="controls no-print">
     <div class="seg" id="mode" role="group" aria-label="Input mode">
       <button data-mode="paper" aria-pressed="false">📄 Paper</button>
@@ -114,9 +157,13 @@ footer a{color:var(--mut)}
     <div class="hand r"><div class="cap">RIGHT hand</div><div class="big" id="rh">0/0</div></div>
   </div>
 
-  <div class="board">
+  <div class="sheet">
+    <header>
+      <h1><span class="b">Brain</span> <span class="t">Tap</span></h1>
+      <div class="tag">Work down the rows — <b class="l">left</b> hand, <b class="r">right</b> hand.</div>
+    </header>
     <table id="grid" aria-label="Number grid">
-      <thead><tr><th class="l">Left hand</th><th></th><th class="r">Right hand</th></tr></thead>
+      <thead><tr><th class="l">Left</th><th></th><th class="r">Right</th></tr></thead>
       <tbody id="rows-body"></tbody>
     </table>
   </div>
@@ -124,16 +171,14 @@ footer a{color:var(--mut)}
   <p class="hint no-print" id="hint"></p>
   <div class="sr" id="live" aria-live="assertive"></div>
 
-  <footer class="no-print">
-    Brain Tap · a counting game · works on paper, keyboard, or a MIDI keyboard.
-  </footer>
+  <footer class="no-print">Brain Tap · paper, keyboard, or MIDI keyboard</footer>
 </div>
 
 <div class="overlay" id="overlay">
   <div class="card">
     <h2>Done! 🎉</h2>
     <div class="big" id="finalTime">0.0s</div>
-    <p id="finalLine" style="color:var(--mut)"></p>
+    <p id="finalLine"></p>
     <button class="btn primary" id="again">Play again</button>
   </div>
 </div>
