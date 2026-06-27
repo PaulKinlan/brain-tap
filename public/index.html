@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Brain Tap — left/right counting game</title>
+<meta name="description" content="A brain game: work down two columns of numbers, tapping the right number of times (or fingers) with your left and right hand. Paper, keyboard, or MIDI keyboard.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='14' font-size='14'>🧠</text></svg>">
+<style>
+:root{
+  --bg:#0f1220; --panel:#171b2e; --ink:#eef0f7; --mut:#9aa3bd; --line:#2a3050;
+  --left:#5aa9ff; --right:#ff8a5a; --ok:#41d18b; --bad:#ff5d6c; --acc:#b58bff;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html{font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif}
+body{margin:0;background:radial-gradient(1200px 600px at 50% -10%,#1b2140 0,var(--bg) 60%),var(--bg);color:var(--ink);min-height:100vh}
+.wrap{max-width:760px;margin:0 auto;padding:18px 16px 60px}
+header{text-align:center;margin:8px 0 14px}
+h1{margin:0;font-size:1.7rem;letter-spacing:-.02em}
+h1 .b{color:var(--left)} h1 .t{color:var(--right)}
+.tag{color:var(--mut);font-size:.9rem;margin-top:2px}
+.controls{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;margin:14px 0}
+.seg{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{appearance:none;border:0;background:transparent;color:var(--mut);font:inherit;font-size:.9rem;padding:8px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--acc);color:#0f1220;font-weight:600}
+label.lbl{color:var(--mut);font-size:.85rem;display:inline-flex;gap:6px;align-items:center}
+input[type=number]{width:3.4em;background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:6px 8px;font:inherit}
+.btn{appearance:none;border:1px solid var(--line);background:var(--panel);color:var(--ink);font:inherit;font-weight:600;padding:9px 16px;border-radius:10px;cursor:pointer}
+.btn.primary{background:var(--acc);color:#0f1220;border-color:transparent}
+.btn:hover{border-color:var(--acc)}
+.statusbar{display:flex;justify-content:space-between;gap:10px;color:var(--mut);font-size:.9rem;margin:6px 2px 12px;font-variant-numeric:tabular-nums}
+.board{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+thead th{font-size:.8rem;color:var(--mut);font-weight:600;padding:8px 0}
+thead th.l{color:var(--left)} thead th.r{color:var(--right)}
+tbody tr{transition:background .15s}
+tbody td{text-align:center;font-size:2rem;font-weight:700;padding:10px 0;border-top:1px solid var(--line)}
+tbody td.num{width:42%}
+tbody .cur{color:var(--mut);font-size:.95rem;font-weight:600;width:16%}
+tr.active{background:rgba(181,139,255,.10)}
+tr.active td{box-shadow:inset 0 0 0 9999px rgba(181,139,255,.04)}
+tr.done td{color:var(--mut);opacity:.55}
+tr.active td.num.l{color:var(--left)} tr.active td.num.r{color:var(--right)}
+td .pips{display:flex;gap:4px;justify-content:center;margin-top:6px;height:8px}
+td .pip{width:8px;height:8px;border-radius:50%;background:var(--line)}
+td.l .pip.on{background:var(--left)} td.r .pip.on{background:var(--right)}
+.flash-ok{animation:fok .4s} .flash-bad{animation:fbad .4s}
+@keyframes fok{0%{background:rgba(65,209,139,.5)}100%{background:transparent}}
+@keyframes fbad{0%{background:rgba(255,93,108,.5)}100%{background:transparent}}
+.hint{color:var(--mut);font-size:.85rem;text-align:center;margin:12px 4px}
+.hands{display:flex;justify-content:center;gap:26px;margin:10px 0 4px}
+.hand{text-align:center}
+.hand .cap{font-size:.75rem;color:var(--mut)}
+.hand .big{font-size:2.2rem;font-weight:800;font-variant-numeric:tabular-nums}
+.hand.l .big{color:var(--left)} .hand.r .big{color:var(--right)}
+.overlay{position:fixed;inset:0;display:none;place-items:center;background:rgba(10,12,22,.78);backdrop-filter:blur(4px);z-index:10}
+.overlay.show{display:grid}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px 28px;text-align:center;max-width:340px}
+.card h2{margin:.1em 0 .3em} .card .big{font-size:2.6rem;font-weight:800;color:var(--ok)}
+.midi-row{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;margin:8px 0}
+select{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:7px 9px;font:inherit;max-width:220px}
+.pill{font-size:.78rem;padding:3px 9px;border-radius:20px;border:1px solid var(--line);color:var(--mut)}
+.pill.ok{color:var(--ok);border-color:var(--ok)} .pill.bad{color:var(--bad);border-color:var(--bad)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+footer{text-align:center;color:var(--mut);font-size:.8rem;margin-top:26px}
+footer a{color:var(--mut)}
+@media print{
+  body{background:#fff;color:#000} .controls,.statusbar,.hint,.hands,footer,.no-print{display:none!important}
+  .board{border:0} tbody td{color:#000!important;opacity:1!important} h1 .b,h1 .t{color:#000}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1><span class="b">Brain</span> <span class="t">Tap</span></h1>
+    <div class="tag">Work down the rows. Each row tells your <b style="color:var(--left)">left</b> and <b style="color:var(--right)">right</b> hand how many.</div>
+  </header>
+
+  <div class="controls no-print">
+    <div class="seg" id="mode" role="group" aria-label="Input mode">
+      <button data-mode="paper" aria-pressed="false">📄 Paper</button>
+      <button data-mode="keyboard" aria-pressed="true">⌨️ Keyboard</button>
+      <button data-mode="midi" aria-pressed="false">🎹 MIDI</button>
+    </div>
+    <div class="seg" id="diff" role="group" aria-label="Difficulty">
+      <button data-diff="beginner" aria-pressed="false">Beginner 1–2</button>
+      <button data-diff="normal" aria-pressed="true">Normal 1–4</button>
+    </div>
+    <div class="seg" id="count" role="group" aria-label="How to answer">
+      <button data-count="taps" aria-pressed="true">Tap N times</button>
+      <button data-count="fingers" aria-pressed="false">Hold N fingers</button>
+    </div>
+    <label class="lbl">Rows <input type="number" id="rows" min="2" max="40" value="8"></label>
+    <button class="btn primary" id="new">New game</button>
+    <button class="btn" id="print">🖨️ Print</button>
+  </div>
+
+  <div class="midi-row no-print" id="midiRow" hidden>
+    <button class="btn" id="midiConnect">Connect MIDI keyboard</button>
+    <select id="midiInputs" hidden aria-label="MIDI input device"></select>
+    <span class="pill" id="midiStatus">not connected</span>
+  </div>
+
+  <div class="statusbar no-print">
+    <span id="progress">Row 0 / 0</span>
+    <span id="timer">0.0s</span>
+    <span id="errors">errors 0</span>
+  </div>
+
+  <div class="hands no-print" id="hands" hidden>
+    <div class="hand l"><div class="cap">LEFT hand</div><div class="big" id="lh">0/0</div></div>
+    <div class="hand r"><div class="cap">RIGHT hand</div><div class="big" id="rh">0/0</div></div>
+  </div>
+
+  <div class="board">
+    <table id="grid" aria-label="Number grid">
+      <thead><tr><th class="l">Left hand</th><th></th><th class="r">Right hand</th></tr></thead>
+      <tbody id="rows-body"></tbody>
+    </table>
+  </div>
+
+  <p class="hint no-print" id="hint"></p>
+  <div class="sr" id="live" aria-live="assertive"></div>
+
+  <footer class="no-print">
+    Brain Tap · a counting game · works on paper, keyboard, or a MIDI keyboard.
+  </footer>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="card">
+    <h2>Done! 🎉</h2>
+    <div class="big" id="finalTime">0.0s</div>
+    <p id="finalLine" style="color:var(--mut)"></p>
+    <button class="btn primary" id="again">Play again</button>
+  </div>
+</div>
+
+<script type="module" src="./game.js"></script>
+</body>
+</html>
