@@ -16,7 +16,8 @@
 const $ = (id) => document.getElementById(id);
 
 const state = {
-  mode: "keyboard",        // paper | keyboard | midi
+  variant: "numbers",      // numbers | shapes
+  mode: "keyboard",        // paper | keyboard | touch | midi
   diff: "normal",          // beginner (1-2) | normal (1-4)
   count: "taps",           // taps | fingers
   rows: 8,
@@ -32,6 +33,46 @@ const state = {
 
 const MIDI_SPLIT = 60; // middle C — below = left hand, at/above = right hand
 
+// ---- shapes variant: spiral generators (SVG, viewBox 0 0 100 100) -----------
+const SHAPE_TYPES = ["round", "square", "triangle"];
+const SHAPE_COLOR = { round: "#3a9f57", square: "#7b62d6", triangle: "#d6457f" };
+
+function roundSpiralPath() {
+  const turns = 3.4, steps = 240, maxR = 44, cx = 50, cy = 50;
+  let d = "";
+  for (let i = 0; i <= steps; i++) {
+    const t = (i / steps) * turns * 2 * Math.PI;
+    const r = (i / steps) * maxR;
+    const x = cx + r * Math.cos(t), y = cy + r * Math.sin(t);
+    d += (i === 0 ? "M" : "L") + x.toFixed(1) + " " + y.toFixed(1) + " ";
+  }
+  return d.trim();
+}
+
+// Angular spiral expanding from the centre: turn by `turnDeg` each segment,
+// segment length grows every two turns. Used for square (90°) and triangle (120°).
+function angularSpiralPath(turnDeg, segments, base) {
+  let x = 50, y = 50, ang = turnDeg === 120 ? -90 : 0;
+  let d = "M50 50 ";
+  for (let i = 0; i < segments; i++) {
+    const len = base * (Math.floor(i / 2) + 1);
+    const r = (ang * Math.PI) / 180;
+    x += len * Math.cos(r); y += len * Math.sin(r);
+    d += "L" + x.toFixed(1) + " " + y.toFixed(1) + " ";
+    ang += turnDeg;
+  }
+  return d.trim();
+}
+
+function shapeSvg(type) {
+  const d = type === "round" ? roundSpiralPath()
+    : type === "square" ? angularSpiralPath(90, 8, 8.5)
+    : angularSpiralPath(120, 9, 10);
+  return `<svg viewBox="0 0 100 100" aria-label="${type} spiral" role="img">` +
+    `<path d="${d}" fill="none" stroke="${SHAPE_COLOR[type]}" stroke-width="3" ` +
+    `stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+}
+
 // ---- grid generation --------------------------------------------------------
 
 function maxFor(diff) { return diff === "beginner" ? 2 : 4; }
@@ -39,6 +80,20 @@ function maxFor(diff) { return diff === "beginner" ? 2 : 4; }
 function rand(n) { return 1 + Math.floor(Math.random() * n); }
 
 function generate() {
+  if (state.variant === "shapes") {
+    // Each row is a spiral type (same shape both columns, like the paper game),
+    // to be traced by hand. Non-interactive — a print/trace activity.
+    state.grid = Array.from({ length: state.rows }, () => ({
+      shape: SHAPE_TYPES[Math.floor(Math.random() * SHAPE_TYPES.length)],
+    }));
+    state.current = 0;
+    state.done = false;
+    state.running = false;
+    render();
+    updateStatus();
+    announce("New shapes sheet ready. Trace each spiral with your left and right hand, or print it.");
+    return;
+  }
   const m = maxFor(state.diff);
   state.grid = Array.from({ length: state.rows }, () => ({ left: rand(m), right: rand(m) }));
   state.current = 0;
@@ -65,6 +120,13 @@ function pips(target, on, side) {
 
 function render() {
   const body = $("rows-body");
+  if (state.variant === "shapes") {
+    body.innerHTML = state.grid.map((row) =>
+      `<tr><td class="shape l">${shapeSvg(row.shape)}</td><td class="cur"></td>` +
+      `<td class="shape r">${shapeSvg(row.shape)}</td></tr>`).join("");
+    $("hands").hidden = true;
+    return;
+  }
   const playable = state.mode !== "paper";
   body.innerHTML = state.grid.map((row, i) => {
     const active = playable && i === state.current && !state.done;
@@ -79,6 +141,7 @@ function render() {
   }).join("");
   $("hands").hidden = !playable || state.done;
   updateHands();
+  updateTouchZones();
 }
 
 function updateHands() {
@@ -196,6 +259,7 @@ function finish() {
   $("finalLine").textContent = `${state.rows} rows · ${state.errors} error${state.errors === 1 ? "" : "s"} · ${(secs / state.rows).toFixed(2)}s per row`;
   $("overlay").classList.add("show");
   announce(`Finished in ${secs.toFixed(1)} seconds with ${state.errors} errors.`);
+  applyMode(); // hide the touch zones now the game is done
   render();
 }
 
@@ -279,22 +343,79 @@ function setSeg(groupId, attr, value, key) {
 }
 
 function applyMode() {
-  $("midiRow").hidden = state.mode !== "midi";
+  const shapes = state.variant === "shapes";
+  // In the shapes variant only the sheet + print/new/rows make sense.
+  $("mode").hidden = shapes;
+  $("diff").hidden = shapes;
+  $("count").hidden = shapes;
+  $("midiRow").hidden = shapes || state.mode !== "midi";
+  document.querySelector(".statusbar").hidden = shapes;
+  // Touch zones overlay only in touch mode (numbers variant, not finished).
+  const touchOn = !shapes && state.mode === "touch" && !state.done;
+  const tz = $("touchzones");
+  tz.classList.toggle("show", touchOn);
+  tz.setAttribute("aria-hidden", String(!touchOn));
+
+  if (shapes) {
+    $("hint").textContent = "Shapes: trace each spiral with your left and right hand (same shape, both hands). Hit Print for a paper sheet.";
+    return;
+  }
   const hints = {
     paper: "Paper mode: print this sheet (Ctrl/Cmd-P) and play away from the screen.",
     keyboard: "Keyboard mode: tap keys on the LEFT half of the keyboard for your left hand, the RIGHT half for your right. " +
       (state.count === "fingers" ? "Hold the right number of keys down at once." : "Tap the right number of times."),
+    touch: "Touch mode: tap the LEFT side of the screen for your left hand, the RIGHT side for your right. " +
+      (state.count === "fingers" ? "Hold the right number of fingers down on each side at once." : "Tap the right number of times on each side."),
     midi: "MIDI mode: connect a keyboard. Notes below middle C = left hand, middle C and up = right hand. " +
       (state.count === "fingers" ? "Press the right number of notes together." : "Play the right number of notes."),
   };
   $("hint").textContent = hints[state.mode];
 }
 
+// ---- touch input: left half of the screen = left hand, right half = right ----
+// Uses Pointer Events so multi-touch is counted via distinct pointerIds.
+const pointerSide = new Map(); // pointerId -> "left" | "right"
+
+function bindZone(el, side) {
+  el.addEventListener("pointerdown", (e) => {
+    if (state.mode !== "touch" || state.variant === "shapes" || state.done) return;
+    e.preventDefault();
+    pointerSide.set(e.pointerId, side);
+    // fingers: identity by pointerId; taps: unique label so each press counts.
+    onHit(side, state.count === "fingers" ? "p" + e.pointerId : "p" + e.pointerId + "-" + tapSeq++);
+    updateTouchZones();
+  }, { passive: false });
+}
+let tapSeq = 0;
+function releasePointer(e) {
+  const side = pointerSide.get(e.pointerId);
+  if (side === undefined) return;
+  pointerSide.delete(e.pointerId);
+  if (state.count === "fingers") { onRelease(side, "p" + e.pointerId); updateTouchZones(); }
+}
+window.addEventListener("pointerup", releasePointer);
+window.addEventListener("pointercancel", releasePointer);
+
+function updateTouchZones() {
+  if (state.mode !== "touch" || state.variant === "shapes") return;
+  const row = state.grid[state.current];
+  if (!row || state.done) { $("zoneLcnt").textContent = ""; $("zoneRcnt").textContent = ""; return; }
+  $("zoneLcnt").textContent = `${handCount("left")} / ${row.left}`;
+  $("zoneRcnt").textContent = `${handCount("right")} / ${row.right}`;
+}
+
+$("variant").addEventListener("click", (e) => {
+  const b = e.target.closest("button"); if (!b) return;
+  setSeg("variant", "variant", b.dataset.variant, "variant");
+  applyMode(); generate();
+});
 $("mode").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
   setSeg("mode", "mode", b.dataset.mode, "mode");
   applyMode(); generate();
 });
+bindZone($("zoneL"), "left");
+bindZone($("zoneR"), "right");
 $("diff").addEventListener("click", (e) => {
   const b = e.target.closest("button"); if (!b) return;
   setSeg("diff", "diff", b.dataset.diff, "diff"); generate();
